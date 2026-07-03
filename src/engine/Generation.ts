@@ -5,6 +5,7 @@ export class ObstacleGenerator {
   private seed: number;
   private activeChunks: Map<number, ObstacleData[]>;
   private lastCorridorCenter: number; // Column index (0 to 9)
+  private recentPlaced: { x: number; y: number }[] = [];
 
   constructor(seed: number) {
     this.seed = seed;
@@ -20,6 +21,7 @@ export class ObstacleGenerator {
     this.seed = seed;
     this.activeChunks.clear();
     this.lastCorridorCenter = 5;
+    this.recentPlaced = [];
   }
 
   /**
@@ -119,20 +121,20 @@ export class ObstacleGenerator {
           continue;
         }
 
-        // Determine probability of obstacle placement in this cell (cranked up)
-        let placementProbability = 0.40; // base probability increased from 0.35
-        if (style === 0) placementProbability = 0.12; // open snow
-        if (style === 2) placementProbability = 0.65; // dense forest
-        if (style === 3) placementProbability = 0.48; // narrow passage
+        // Determine probability of obstacle placement in this cell (cranked up by another +10% / 94% dense forest)
+        let placementProbability = 0.75; // base probability increased from 0.65
+        if (style === 0) placementProbability = 0.45; // open snow increased from 0.35
+        if (style === 2) placementProbability = 0.94; // dense forest set to exactly 94%
+        if (style === 3) placementProbability = 0.85; // narrow passage increased from 0.75
 
         // Scale probability heavily with difficulty
-        placementProbability += difficultyFactor * 0.32;
+        placementProbability += difficultyFactor * 0.40;
 
-        // Override probability for start chunks to keep them gentle but active
+        // Override probability for start chunks to be extremely dense (raised by +10% at start)
         if (chunkIndex === 0) {
-          placementProbability = 0.12;
+          placementProbability = 0.55; // up from 0.45
         } else if (chunkIndex === 1) {
-          placementProbability = 0.18;
+          placementProbability = 0.70; // up from 0.60
         }
 
         // Ensure we don't block the screen entirely
@@ -158,8 +160,44 @@ export class ObstacleGenerator {
           const obstacleX = c * colWidth + offsetX;
           const obstacleY = rowY + offsetY;
 
-          // Add obstacle metadata
-          obstacles.push(this.createObstacleData(`${chunkIndex}_${r}_${c}`, obstacleX, obstacleY, type));
+          // Spacing check: prevent obstacles from overlapping (e.g. logs on top of trees)
+          let tooClose = false;
+
+          // Check against current chunk obstacles
+          for (const existing of obstacles) {
+            const dx = Math.abs(existing.x - obstacleX);
+            const dy = Math.abs(existing.y - obstacleY);
+            // Spacing guard: keep at least 65px horizontal and 85px vertical distance between obstacle centers
+            if (dx < 65 && dy < 85) {
+              tooClose = true;
+              break;
+            }
+          }
+
+          // Check against recent obstacles from the previous chunk
+          if (!tooClose) {
+            for (const existing of this.recentPlaced) {
+              const dx = Math.abs(existing.x - obstacleX);
+              const dy = Math.abs(existing.y - obstacleY);
+              if (dx < 65 && dy < 85) {
+                tooClose = true;
+                break;
+              }
+            }
+          }
+
+          if (tooClose) {
+            continue; // Skip placement to prevent overlap
+          }
+
+          const newObs = this.createObstacleData(`${chunkIndex}_${r}_${c}`, obstacleX, obstacleY, type);
+          obstacles.push(newObs);
+
+          this.recentPlaced.push({ x: obstacleX, y: obstacleY });
+          // Limit tracking list size to keep performance lightweight
+          if (this.recentPlaced.length > 20) {
+            this.recentPlaced.shift();
+          }
         }
       }
     }

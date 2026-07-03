@@ -34,18 +34,21 @@ export default function GameCanvas({
     if (!containerRef.current) return;
 
     // Create the Phaser configuration
-    const config: Phaser.Types.Core.GameConfig = {
+    const config: any = {
       type: Phaser.AUTO,
       width: GAME_WIDTH,
       height: GAME_HEIGHT,
+      resolution: window.devicePixelRatio || 2, // Support high pixel density (Mac / Retina screens) at root
       parent: containerRef.current,
       backgroundColor: '#f8fafc', // Snowy slate-50 background
-      pixelArt: true,            // Disable antialiasing for crisp vector shapes
-      antialias: false,          // Stop texture smoothing on render
-      roundPixels: true,         // Stop subpixel drawing interpolation
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
+      },
+      render: {
+        antialias: false,          // Stop texture smoothing on render
+        pixelArt: true,            // Disable bilinear filtering for crystal-clear shapes
+        roundPixels: true,         // Disable subpixel coordinates blurring
       },
       physics: {
         default: 'arcade',
@@ -199,11 +202,6 @@ class BootScene extends Phaser.Scene {
     g.fillTriangle(25, 4, 10, 24, 40, 24);
     g.fillTriangle(25, 18, 5, 42, 45, 42);
     g.fillTriangle(25, 32, 0, 56, 50, 56);
-
-    // Snow caps
-    g.fillStyle(0xffffff);
-    g.fillTriangle(25, 4, 16, 14, 34, 14);
-    g.fillTriangle(25, 18, 12, 30, 38, 30);
 
     g.generateTexture('tree_green', 50, 70);
     g.destroy();
