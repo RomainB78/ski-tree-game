@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ski Tree - Endless Carving Game",
+  title: "Ski Tree App",
   description: "Dodge trees, rocks, and logs down the high-speed downhill slopes. Vive les Caniches !",
 };
 
