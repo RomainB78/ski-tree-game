@@ -455,7 +455,7 @@ class SkiScene extends Phaser.Scene {
     this.handlePointerInputs();
 
     // 2. Physics Update
-    PhysicsSolver.updateSkier(this.state, dt, this.currentDistance / 2.05);
+    PhysicsSolver.updateSkier(this.state, dt, this.currentDistance / 2.05, this.isDragging);
 
     // Update Points Score (45.4 pixels per point matches 74 points at 12 seconds at base speed)
     this.currentDistance = Math.floor(this.state.y / 45.4);
@@ -528,8 +528,8 @@ class SkiScene extends Phaser.Scene {
       // Drag distance relative to start touch position
       const deltaX = pointer.x - this.touchStartX;
 
-      // Snappy carving: 80px drag for maximum steering angle (suited for thumb play)
-      const maxSteerDistance = 80.0;
+      // Smooth carving range: 110px drag for maximum steering angle (precise control, not twitchy)
+      const maxSteerDistance = 110.0;
       const mappedAngle = (deltaX / maxSteerDistance) * 1.13 * this.sensitivity;
       this.state.targetAngle = Math.max(-1.13, Math.min(1.13, mappedAngle));
     } else {

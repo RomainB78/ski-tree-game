@@ -16,7 +16,7 @@ export class PhysicsSolver {
    * Updates the skier's position, velocity, turning angle, and lateral slip.
    * Runs frame-rate independent calculation using dt (delta-time in seconds).
    */
-  public static updateSkier(state: SkierState, dt: number, distance: number): void {
+  public static updateSkier(state: SkierState, dt: number, distance: number, isDragging: boolean = false): void {
     // Prevent huge dt jumps from breaking physics (e.g. background tab switching)
     const clampedDt = Math.min(0.1, dt);
 
@@ -36,7 +36,13 @@ export class PhysicsSolver {
     const angleDiff = state.targetAngle - state.angle;
     // Normalize time factor to 60 FPS standard
     const fpsScale = clampedDt * 60.0;
-    state.angle += angleDiff * Math.min(1.0, PHYSICS_CONFIG.TURN_INERTIA * fpsScale);
+    
+    // Scale responsiveness dramatically when pointer dragging is active, keyboard is untouched
+    const currentInertia = isDragging 
+      ? Math.min(0.8, PHYSICS_CONFIG.TURN_INERTIA * 3.2) 
+      : PHYSICS_CONFIG.TURN_INERTIA;
+      
+    state.angle += angleDiff * Math.min(1.0, currentInertia * fpsScale);
 
     // 3. Compute skier facing direction vectors
     // Facing vector: X-axis points right (sin), Y-axis points down (cos)
@@ -48,8 +54,12 @@ export class PhysicsSolver {
     const targetVy = fy * state.speedY;
 
     // 5. Apply lateral slide physics (skier momentum / carving friction)
-    // If the skier changes facing direction quickly, they slide sideways before the skis catch
-    const slideScale = Math.min(1.0, PHYSICS_CONFIG.CARVING_FRICTION * fpsScale);
+    // If touch dragging, make the carving friction much tighter (less slide/drift) so the skier responds instantly by moving left/right
+    const currentFriction = isDragging 
+      ? Math.min(0.9, PHYSICS_CONFIG.CARVING_FRICTION * 3.5) 
+      : PHYSICS_CONFIG.CARVING_FRICTION;
+      
+    const slideScale = Math.min(1.0, currentFriction * fpsScale);
     state.vx += (targetVx - state.vx) * slideScale;
     state.vy += (targetVy - state.vy) * Math.min(1.0, slideScale * 1.5); // Y velocity aligns slightly faster
 
