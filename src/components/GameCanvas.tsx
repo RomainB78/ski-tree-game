@@ -308,6 +308,10 @@ class SkiScene extends Phaser.Scene {
   
   // Player stats config
   private sensitivity = 1.0;
+  
+  // Touch drag coordinates
+  private touchStartX = 0;
+  private isDragging = false;
 
   constructor() {
     super({ key: 'SkiScene' });
@@ -516,12 +520,20 @@ class SkiScene extends Phaser.Scene {
   private handlePointerInputs() {
     const pointer = this.input.activePointer;
     if (pointer.isDown) {
-      // Swipe/drag distance from screen center
-      const deltaX = pointer.x - (GAME_WIDTH / 2);
-      // Map displacement to turning angle, modulated by user sensitivity
-      const maxSteerDistance = 180.0; // px
+      if (!this.isDragging) {
+        this.touchStartX = pointer.x;
+        this.isDragging = true;
+      }
+
+      // Drag distance relative to start touch position
+      const deltaX = pointer.x - this.touchStartX;
+
+      // Snappy carving: 80px drag for maximum steering angle (suited for thumb play)
+      const maxSteerDistance = 80.0;
       const mappedAngle = (deltaX / maxSteerDistance) * 1.13 * this.sensitivity;
       this.state.targetAngle = Math.max(-1.13, Math.min(1.13, mappedAngle));
+    } else {
+      this.isDragging = false;
     }
   }
 
